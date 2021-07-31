@@ -35,16 +35,6 @@ class NIW(BaseDistribution):
         if data is not None:
             self.add_data(data)
 
-    @property
-    def sigma(self):
-        # Sigma is only stored as cholesky decompositions
-        return self._U.T @ self._U
-
-    @sigma.setter
-    def sigma(self, S):
-        # Only store cholesky decomposition
-        self._U = np.linalg.cholesky(S)
-
     def add_data(self, data, weight=None):
         '''
         Add data into the distribution and update params
@@ -72,7 +62,7 @@ class NIW(BaseDistribution):
 
         # Update Sigma (TODO change to rank 1)
         res = data - self.mu
-        self.sigma += weight*(self.kappa/(self.kappa + weight))(res.T @ res)
+        self.sigma += weight*(self.kappa/(self.kappa - weight)*np.outer(res,res))
 
     def rem_data(self, data, weight=None):
         '''
@@ -92,8 +82,8 @@ class NIW(BaseDistribution):
         ''' 
 
         # Downdate covariance
-        res = (data-self.mn)
-        self.sigma -= weight*self.kappa/(self.kappa-weight)*(res.T @ res);
+        res = (data-self.mu)
+        self.sigma -= weight*(self.kappa/(self.kappa-weight)*np.outer(res,res))
 
         # Downdate scalar parameters
         self.N -= weight
@@ -111,20 +101,20 @@ class NIW(BaseDistribution):
         nu_n' = nu_n - D + 1
         Murphy PML 2021 Eq 7.144 pp. 199  
         '''
-
-        _, D = X.shape
+        
+        D = X.shape[-1]
         nu_p = self.nu - D + 1
         S = self.sigma * (self.kappa + 1)/(self.kappa + nu_p)      
         U = np.linalg.cholesky(S)
         res = X - self.mu # rely on broadcasting
-        QU = solve_triangular(U, res, trans='T')
+        QU = solve_triangular(U, res.T, trans='T')
 
         ll = gammaln((nu_p + D)/2) - \
              gammaln((nu_p)/2) - \
              D/2*np.log(nu_p) -\
              D/2*np.log(np.pi) -\
              np.sum(np.log(np.diag(U))) -\
-             (nu_p+D)/2 (np.log(1 + np.sum(QU**2,axis=1)/nu_p))
+             (nu_p+D)/2 * (np.log(1 + np.sum(QU.T**2,axis=-1)/nu_p))
 
         return ll
 
