@@ -55,17 +55,20 @@ def test_NIW_predloglik():
 
     C = NIW(mu, nu, kappa, S)
 
-    x = np.array([1,1])
+    ll_mu = C.logpredpdf(mu)
 
+    x = np.array([1,1])
     ll = C.logpredpdf(x)
 
     assert(np.isscalar(ll))
+    assert(ll < ll_mu)
 
     X = np.random.standard_normal((20,2))
     ll = C.logpredpdf(X)
 
     assert(np.all(ll.shape == (20,)))
     assert(np.all(ll < 0 ))
+    assert(np.all(ll < ll_mu))
 
 
 
