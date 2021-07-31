@@ -24,6 +24,7 @@ setup(
     package_dir={'':'src'},
     include_package_data=False,
     install_requires=[
-        "numpy"
+        "numpy",
+        "scipy"
     ],
 )
