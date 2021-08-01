@@ -8,7 +8,7 @@ class Cluster(ABC):
 
     @abstractmethod
     def __init__(self, opts:dict) -> None:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def learn(self, data:NDArray) -> None:

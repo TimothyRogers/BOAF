@@ -2,11 +2,20 @@ from numpy import linalg
 from numpy.core.numeric import isscalar
 from numpy.linalg.linalg import cholesky
 import pytest
+from boaf.base_distributions.base import BaseDistribution
 
 from boaf.base_distributions.multivariate import NIW
 
 import numpy as np
 np.random.seed(1)
+
+def test_base():
+
+    BaseDistribution.__abstractmethods__ = set()
+    D = BaseDistribution()
+
+    with pytest.raises(NotImplementedError):
+        D.logpredpdf(None)
 
 def test_NIW_init():
 
@@ -24,19 +33,27 @@ def test_NIW_init():
 
 def test_NIW_update_downdate():
 
-    mu = np.array([0,0])
+    mu = np.array([0,0])[None,:]
     nu = 2
     kappa = 1
     S = 4*np.eye(2)
 
     C = NIW(mu, nu, kappa, S)
 
-    x = np.array([1,1])
+    x = np.array([1,1])[None,:]
+    C2 = NIW(mu, nu, kappa, S, x)
 
     C.add_one(x)
+    
+    assert( np.allclose(C.mu,C2.mu))
+    assert( C.nu == C2.nu)
+    assert( C.kappa == C2.kappa )
+    assert( np.allclose(C.sigma,C2.sigma))
+
     C.rem_one(x)
 
     X = np.random.standard_normal((20,2))
+
 
     C.add_data(X)
     C.rem_data(X)
