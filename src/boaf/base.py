@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from numpy.typing import NDArray
 
 class Cluster(ABC):
     '''
@@ -6,6 +7,13 @@ class Cluster(ABC):
     '''
 
     @abstractmethod
-    def __init__(self) -> None:
+    def __init__(self, opts:dict) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def learn(self, data:NDArray) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def predict(self, data:NDArray) -> NDArray:
+        raise NotImplementedError
