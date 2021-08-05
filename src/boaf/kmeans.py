@@ -29,7 +29,7 @@ class KMeans(Cluster):
         N, D = data.shape
         inds = np.zeros((N,))
 
-        for _ in range(self.opts['niter']):
+        for _ in range(self.opts['niters']):
             
             inds_old = inds.copy()
             dists = cdist(data, self.means)
