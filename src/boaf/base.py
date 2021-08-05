@@ -8,7 +8,7 @@ class Cluster(ABC):
 
     @abstractmethod
     def __init__(self, opts:dict) -> None:
-        pass
+        self.opts = opts
 
     @abstractmethod
     def learn(self, data:NDArray) -> None:

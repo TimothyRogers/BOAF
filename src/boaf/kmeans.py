@@ -12,8 +12,7 @@ class KMeans(Cluster):
     '''
 
     def __init__(self, opts:dict) -> None:
-        
-        self.opts = opts
+        super().__init__(opts)
 
     def learn(self, data) -> None:
         
