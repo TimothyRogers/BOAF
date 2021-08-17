@@ -19,7 +19,7 @@ def test_base():
 
 def test_NIW_init():
 
-    mu = np.array([0,0])
+    mu = np.array([[0,0]])
     nu = 2
     kappa = 1
     S = 4*np.eye(2)
@@ -65,7 +65,7 @@ def test_NIW_update_downdate():
 
 def test_NIW_predloglik():
 
-    mu = np.array([0,0])
+    mu = np.array([[0,0]])
     nu = 2
     kappa = 1
     S = 4*np.eye(2)
@@ -74,10 +74,10 @@ def test_NIW_predloglik():
 
     ll_mu = C.logpredpdf(mu)
 
-    x = np.array([1,1])
+    x = np.array([[1,1]])
     ll = C.logpredpdf(x)
 
-    assert(np.isscalar(ll))
+    assert(ll.shape[0] == 1)
     assert(ll < ll_mu)
 
     X = np.random.standard_normal((20,2))

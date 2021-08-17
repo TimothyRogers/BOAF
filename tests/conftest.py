@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-@pytest.fixture(params=[1,2,4])
+@pytest.fixture(params=[2,4,6])
 def clustering_data(request):
 
     nclusters = request.param

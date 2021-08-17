@@ -11,7 +11,7 @@ def test_kmeans(clustering_data):
 
     opts = {
         'nclusters': nclusters,
-        'niter': 200
+        'niters': 200
     }
     model = KMeans(opts)
     model.learn(X)
