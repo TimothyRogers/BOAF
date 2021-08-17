@@ -18,20 +18,22 @@ class NIW(BaseDistribution):
         nu,
         kappa,
         sigma, 
-        data=None
+        data=None,
+        weight=None
         ) -> None:
         '''
         Initialise a NIW prior object
         '''
         
-        self.mu = mu
+        self.mu = mu.copy()
         self.nu = nu
         self.kappa = kappa
-        self.sigma = sigma
+        self.sigma = sigma.copy()
         self.N = 0 # No data yet
+        self.D = mu.shape[1]
 
         if data is not None:
-            self.add_data(data)
+            self.add_data(data, weight=weight)
 
     def add_one(self, data, weight=1):
         '''
@@ -67,6 +69,8 @@ class NIW(BaseDistribution):
         # Downdate mean
         self.mu = ((self.kappa + weight)*self.mu - data * weight)/self.kappa
 
+    def map_estimates(self):
+        return self.mu, self.sigma/(self.nu+self.D+2)
 
     def logpredpdf(self, X):
         '''
@@ -78,16 +82,16 @@ class NIW(BaseDistribution):
         
         D = X.shape[-1]
         nu_p = self.nu - D + 1
-        S = self.sigma * (self.kappa + 1)/(self.kappa + nu_p)      
-        U = np.linalg.cholesky(S)
+        S = self.sigma * (self.kappa + 1)/(self.kappa * nu_p)      
+        L = np.linalg.cholesky(S)
         res = X - self.mu # rely on broadcasting
-        QU = solve_triangular(U, res.T, trans='T')
+        QU = solve_triangular(L, res.T, trans='T', lower=True)
 
         ll = gammaln((nu_p + D)/2) - \
              gammaln((nu_p)/2) - \
              D/2*np.log(nu_p) -\
              D/2*np.log(np.pi) -\
-             np.sum(np.log(np.diag(U))) -\
+             np.sum(np.log(np.diag(L))) -\
              (nu_p+D)/2 * (np.log(1 + np.sum(QU.T**2,axis=-1)/nu_p))
 
         return ll
