@@ -3,6 +3,7 @@ from numpy.lib.index_tricks import nd_grid
 from numpy.typing import NDArray
 from scipy.spatial.distance import cdist
 
+
 from .base import Cluster
 
 
@@ -13,6 +14,9 @@ class KMeans(Cluster):
 
     def __init__(self, opts:dict) -> None:
         super().__init__(opts)
+        # If not initialisation specified use K++
+        if 'init' not in self.opts:
+            self.opts['init'] = 'kpp' 
 
     def learn(self, data) -> None:
         
@@ -21,8 +25,22 @@ class KMeans(Cluster):
 
     def initialise(self, data:NDArray) -> None:
 
-        D = data.shape[-1]
-        self.means = data[np.random.choice(data.shape[0],self.opts['nclusters'], replace=False),:]
+        N = data.shape[0]
+        if self.opts['init'] == 'kpp':
+            # First mean is random
+            k = [np.random.choice(N)]
+            self.means = data[k[0],:][None,:]
+            # Rest of clusters add furthest data
+            for _ in range(self.opts['nclusters']-1):
+                # Distances
+                dists = np.min(cdist(data, self.means),axis=1)
+                # Convert to probabilities
+                pmean = dists/np.sum(dists,axis=0)
+                # Assign with p = pmean 
+                k.append(np.random.choice(N, p=pmean))
+                self.means = np.vstack((self.means,data[k[-1],:]))
+        elif self.opts['init'][:4] == 'rand':
+            self.means = data[np.random.choice(N,self.opts['nclusters'], replace=False),:]
 
     def _fit(self, data:NDArray) -> None:
         
