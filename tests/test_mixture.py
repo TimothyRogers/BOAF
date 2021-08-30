@@ -28,10 +28,26 @@ def test_mixture(clustering_data):
     model = MixtureModel(opts, base_distribution=NIW)
     model.learn(X)
     inds_pred = model.predict(X)
-    print(inds_pred)
 
     assert(np.all(inds_pred < nclusters))
     assert(np.all(inds.shape == inds_pred.shape))
+
+    opts['init'] = 'kpp'
+    model = MixtureModel(opts, base_distribution=NIW)
+    model.learn(X)
+    inds_pred = model.predict(X)
+
+    assert(np.all(inds_pred < nclusters))
+    assert(np.all(inds.shape == inds_pred.shape))
+    
+    opts['init'] = 'rand'
+    model = MixtureModel(opts, base_distribution=NIW)
+    model.learn(X)
+    inds_pred = model.predict(X)
+
+    assert(np.all(inds_pred < nclusters))
+    assert(np.all(inds.shape == inds_pred.shape))
+
 
 
 @pytest.mark.usefixtures("clustering_data")

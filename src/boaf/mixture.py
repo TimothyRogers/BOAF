@@ -15,6 +15,9 @@ class MixtureModel(Cluster):
 
     def __init__(self, opts: dict, base_distribution) -> None:
         super().__init__(opts)
+        # If not initialisation specified use K++
+        if 'init' not in self.opts:
+            self.opts['init'] = 'kpp' 
         self.base_distribution = base_distribution
         self.mixing_proportions = opts['prior']['alpha']
         self.clusters = [self.base_distribution(**self.opts['prior']['cluster']) \
@@ -43,17 +46,36 @@ class MixtureModel(Cluster):
         return likelihood
 
     def _init_clusters(self,data):
+
+        N = data.shape[0]
+        if self.opts['init'] == 'kpp':
+            # First mean is random
+            k = [np.random.choice(N)]
+            self.means = data[k[0],:][None,:]
+            self.clusters[0].add_one(data[k[0],:][None,:])
+            # Rest of clusters add furthest data
+            for i in range(self.opts['nclusters']-1):
+                # Distances
+                dists = np.min(cdist(data, self.means),axis=1)
+                # Convert to probabilities
+                pmean = dists/np.sum(dists,axis=0)
+                # Assign with p = pmean 
+                k.append(np.random.choice(N, p=pmean))
+                self.means = np.vstack((self.means,data[k[-1],:]))
+                self.clusters[i+1].add_one(data[k[-1],:][None,:])
+        elif self.opts['init'][:4] == 'rand':
+            k = np.random.choice(N,self.opts['nclusters'], replace=False)
+            self.means = data[k,:]
         
         N = data.shape[0]
+        not_used = np.ones((N,),bool)
+        not_used[k] = False
         #Random initialise
-        for i, x in enumerate(data[np.random.choice(N, size=N, replace=False),:]):
+        for i, x in enumerate(data[not_used,:]):
             x = x[None,:]
-            if i <= 1:
-                self.clusters[i].add_data(x)
-            else:
-                ll = self.likelihood(x)
-                ind = np.argmax(ll)
-                self.clusters[ind].add_data(x)
+            ll = self.likelihood(x)
+            ind = np.argmax(ll)
+            self.clusters[ind].add_data(x)
 
     def _em(self, data: NDArray):
         '''
