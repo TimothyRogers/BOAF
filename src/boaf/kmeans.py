@@ -1,29 +1,68 @@
 import numpy as np
-from numpy.lib.index_tricks import nd_grid
 from numpy.typing import NDArray
 from scipy.spatial.distance import cdist
-
 
 from .base import Cluster
 
 
 class KMeans(Cluster):
-    '''
-    Basic K-Means clustering algorithm
-    '''
+    """KMeans Clustering 
+
+    Provide methods for clustering with KMeans this includes using KMeans++ or 
+    random assignment to initialise the clusters.
+
+    """
 
     def __init__(self, opts:dict) -> None:
+        """Initalise KMeans Clustering
+
+        Args:
+            opts: Dictionary of options with args:
+
+            init: (Optional) Initialisation method 'kpp' or 'rand'
+            niters: Number of training iterations
+            nclusters: Number of clusters
+        """
         super().__init__(opts)
         # If not initialisation specified use K++
         if 'init' not in self.opts:
             self.opts['init'] = 'kpp' 
 
-    def learn(self, data) -> None:
+    def learn(self, data:NDArray) -> None:
+        """Learn the KMeans model
+
+        Learning the KMeans model has effectively two stages. First we need
+        to initialise some guess of the centers for the clusters then we will
+        need to iterate over the data to refine those estimates.
+
+        Args:
+            data: An array of training data size (N,D) with N observations in
+                D dimensions.
+
+        """
         
         self.initialise(data)
         self._fit(data)
 
     def initialise(self, data:NDArray) -> None:
+        """Initialise the KMeans centers
+        
+        The success (or failure) of the KMeans process can be very sensitive 
+        to the initialisation. This method provides approaches for setting said
+        initial cluster centers.
+
+        Currently two methods are supported:
+        
+        1. Random initialisation ('rand'), randomly choose a datum as the initial
+            center
+        2. KMeans++ ('kpp'), select points far away from each other with some 
+            probability associated with the distance
+
+        Args:
+            data: An array of training data size (N,D) with N observations in
+                D dimensions.
+
+        """
 
         N = data.shape[0]
         if self.opts['init'] == 'kpp':
@@ -43,6 +82,16 @@ class KMeans(Cluster):
             self.means = data[np.random.choice(N,self.opts['nclusters'], replace=False),:]
 
     def _fit(self, data:NDArray) -> None:
+        """Fit the KMeans Centers
+        
+        Iterate through the data from the start point to refine the estimates 
+        of the KMeans centers.
+
+        Args:
+            data: An array of training data size (N,D) with N observations in
+                D dimensions.
+
+        """
         
         N, D = data.shape
         inds = np.zeros((N,))
@@ -52,7 +101,8 @@ class KMeans(Cluster):
             inds_old = inds.copy()
             dists = cdist(data, self.means)
             inds = np.argmin(dists, axis=1)
-
+            
+            # Stop iterating if KMeans has stalled
             if np.all(inds == inds_old):
                 return
 
@@ -60,10 +110,23 @@ class KMeans(Cluster):
                 self.means[k,:] = np.mean(data[inds == k,:], axis=0)
 
     def predict(self, data:NDArray) -> NDArray:
+        """Predict cluster associations
+        
+        Determine the most likely cluster assignments for the data based 
+        off the current cluster centers
 
-            dists = cdist(data, self.means)
-            inds = np.argmin(dists, axis=1)
-            return inds
+        Args:
+            data: An array of training data size (N,D) with N observations in
+                D dimensions.
+        
+        Returns:
+            inds: An array of indices, size (N,1)
+
+        """
+
+        dists = cdist(data, self.means)
+        inds = np.argmin(dists, axis=1)
+        return inds
         
 
 
