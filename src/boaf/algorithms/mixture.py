@@ -4,8 +4,8 @@ from scipy.spatial.distance import cdist
 from typing import Type
 
 from .base import Cluster
-from .base_distributions.base import BaseDistribution
-from .base_distributions.multivariate import NIW
+from ..base_distributions.base import BaseDistribution
+from ..base_distributions.multivariate import NIW
 
 
 class MixtureModel(Cluster):
@@ -88,7 +88,7 @@ class MixtureModel(Cluster):
 
         Args:
             data: An array of data size (N,D) with N observations in D dimensions
-            for which to determine the clusters.
+                for which to determine the clusters.
         
         Returns:
             An array of indices, size (N,)

@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
+"""Base Class for All Clustering Algorithms
+"""
+
 class Cluster(ABC):
     """Abstract base class for all cluster models
     
