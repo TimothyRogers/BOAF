@@ -18,17 +18,16 @@ class KMeans(Cluster):
 
         Args:
             opts: Dictionary of options with args:
-
-            init: (Optional) Initialisation method 'kpp' or 'rand'
-            niters: Number of training iterations
-            nclusters: Number of clusters
+                init: (Optional) Initialisation method 'kpp' or 'rand';
+                niters: Number of training iterations;
+                nclusters: Number of clusters
         """
         super().__init__(opts)
         # If not initialisation specified use K++
         if 'init' not in self.opts:
             self.opts['init'] = 'kpp' 
 
-    def learn(self, data:NDArray) -> None:
+    def learn(self, data:NDArray[np.float64]) -> None:
         """Learn the KMeans model
 
         Learning the KMeans model has effectively two stages. First we need
@@ -44,7 +43,7 @@ class KMeans(Cluster):
         self.initialise(data)
         self._fit(data)
 
-    def initialise(self, data:NDArray) -> None:
+    def initialise(self, data:NDArray[np.float64]) -> None:
         """Initialise the KMeans centers
         
         The success (or failure) of the KMeans process can be very sensitive 
@@ -53,10 +52,8 @@ class KMeans(Cluster):
 
         Currently two methods are supported:
         
-        1. Random initialisation ('rand'), randomly choose a datum as the initial
-            center
-        2. KMeans++ ('kpp'), select points far away from each other with some 
-            probability associated with the distance
+        1. Random initialisation ('rand'), randomly choose a datum as the initial center
+        2. KMeans++ ('kpp'), select points far away from each other with some probability associated with the distance
 
         Args:
             data: An array of training data size (N,D) with N observations in
@@ -81,7 +78,7 @@ class KMeans(Cluster):
         elif self.opts['init'][:4] == 'rand':
             self.means = data[np.random.choice(N,self.opts['nclusters'], replace=False),:]
 
-    def _fit(self, data:NDArray) -> None:
+    def _fit(self, data:NDArray[np.float64]) -> None:
         """Fit the KMeans Centers
         
         Iterate through the data from the start point to refine the estimates 
@@ -109,7 +106,7 @@ class KMeans(Cluster):
             for k in range(self.opts['nclusters']):
                 self.means[k,:] = np.mean(data[inds == k,:], axis=0)
 
-    def predict(self, data:NDArray) -> NDArray:
+    def predict(self, data:NDArray[np.float64]) -> NDArray[np.int16]:
         """Predict cluster associations
         
         Determine the most likely cluster assignments for the data based 
@@ -120,7 +117,7 @@ class KMeans(Cluster):
                 D dimensions.
         
         Returns:
-            inds: An array of indices, size (N,1)
+            An array of indices, size (N,)
 
         """
 
