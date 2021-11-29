@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 np.random.seed(1)
 
-from boaf.kmeans import KMeans
+from boaf.algorithms.kmeans import KMeans
 
 @pytest.mark.usefixtures("clustering_data")
 def test_kmeans(clustering_data):

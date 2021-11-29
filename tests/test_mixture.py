@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 np.random.seed(1)
 
-from boaf.mixture import MixtureModel, GMM
+from boaf.algorithms.mixture import MixtureModel, GMM
 from boaf.base_distributions.multivariate import NIW
 
 @pytest.mark.usefixtures("clustering_data")

@@ -1,6 +1,6 @@
 import pytest
 
-from boaf.base import Cluster
+from boaf.algorithms.base import Cluster
 
 def test_base_cluster():
 
