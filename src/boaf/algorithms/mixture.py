@@ -254,5 +254,5 @@ class GMM(MixtureModel):
         """
         
         base_distribution = NIW
-        super().__init__(opts, base_distribution)
+        super().__init__(opts, base_distribution=base_distribution)
 
