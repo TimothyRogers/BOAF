@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 np.random.seed(1)
 
-from boaf.algorithms.mixture import FunctionalMixture, MixtureModel, GMM
+from boaf.algorithms.mixture import RegressorMixture, MixtureModel, GMM
 from boaf.base_distributions.multivariate import NIW, BLR
 
 @pytest.mark.usefixtures("clustering_data")
@@ -97,7 +97,7 @@ def test_BLR(regression_clustering_data):
             }
         }
     }
-    model = FunctionalMixture(opts, base_distribution=BLR)
+    model = RegressorMixture(opts, base_distribution=BLR)
     model.learn((X,y))
     inds_pred = model.predict((X,y))
     print(inds_pred)
