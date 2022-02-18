@@ -4,7 +4,7 @@ from numpy.linalg.linalg import cholesky
 import pytest
 from boaf.base_distributions.base import BaseDistribution
 
-from boaf.base_distributions.multivariate import NIW
+from boaf.base_distributions.multivariate import NIW, BLR
 
 import numpy as np
 np.random.seed(1)
@@ -88,6 +88,97 @@ def test_NIW_predloglik():
     assert(np.all(ll < ll_mu))
 
 
+def test_BLR_init():
+
+    m0 = np.array([0,0])
+    L0 = 4*np.eye(2)
+    a0 = 2
+    b0 = 2
+
+    C = BLR(m0, L0, a0, b0)
+
+    assert( np.all(C.mu == m0 ))
+    assert( np.all(C.m0 == m0 ))
+    assert( C.an == a0)
+    assert( C.bn == b0)
+    assert( C.b0 == b0)
+    assert( np.all(C.L0 == L0))
+    assert( np.all(C.Lam == L0))
+    
+
+def test_BLR_update_downdate():
+
+    m0 = np.array([0,0])
+    L0 = 4*np.eye(2)
+    a0 = 2
+    b0 = 2
+
+    C = BLR(m0, L0, a0, b0)
 
 
+    data = (np.array([1,1]), 1)
+    C2 = BLR(m0, L0, a0, b0, data)
 
+    C.add_one(data)
+    
+    assert( np.allclose(C.mu,C2.mu))
+    assert( C.an == C2.an)
+    assert( C.bn == C2.bn)
+    assert( np.allclose(C.Lam,C2.Lam))
+
+    C.rem_one(data)
+
+    assert( np.allclose(C.mu,m0))
+    assert( C.an == a0)
+    assert( C.bn == b0)
+    assert( np.allclose(C.Lam,L0))
+
+    C.add_data(data)
+    C.rem_data(data)
+
+    assert( np.allclose(C.mu,m0))
+    assert( C.an == a0)
+    assert( C.bn == b0)
+    assert( np.allclose(C.Lam,L0))
+
+    data = (np.random.randn(10,2), np.random.randn(10,))
+
+    C.add_data(data)
+    C.rem_data(data)
+
+    assert( np.allclose(C.mu,m0))
+    assert( np.allclose(C.an,a0))
+    assert( np.allclose(C.bn,b0))
+    assert( np.allclose(C.Lam,L0))
+
+def test_BLR_predloglik():
+
+    beta = np.array([2,-3])
+    m0 = beta
+    L0 = 4*np.eye(2)
+    a0 = 2
+    b0 = 2
+
+    C = BLR(m0, L0, a0, b0)
+
+    x = np.linspace(-1,1,10)
+    X = np.power(x[:,None],np.array([0,1]))
+    y = np.dot(X,beta) + 0.01*np.random.standard_normal((10,))
+
+    ll_mu = C.logpredpdf((X[0,:],y[0]))
+
+    ll = C.logpredpdf((np.random.standard_normal((1,2)),np.random.standard_normal((1,))))
+
+    assert(ll.shape[0] == 1)
+    assert(ll < ll_mu)
+
+    ll = C.logpredpdf((X,np.random.randn(10,)))
+
+    assert(np.all(ll.shape == (10,)))
+    assert(np.all(ll < 0 ))
+    assert(np.all(ll < ll_mu))
+
+    yp, Sp, nu = C.posterior_predictive(X)
+    assert(np.allclose(yp,y,rtol=0.1))
+    assert(np.all(np.diag(Sp*nu/(nu-2))>0))
+    assert(nu>0)

@@ -152,8 +152,31 @@ class BLR(BaseDistribution):
         if weight is None:
             weight = np.ones_like(data[1])
 
-        for xx, yy, ww in zip(data[0],data[1],weight):
-            self.add_one((xx,yy),ww)
+        if data[0].shape[0] == 1 or len(data[0].shape)==1:
+            self.add_one(data, weight)
+        else:
+            for xx, yy, ww in zip(data[0],data[1],weight):
+                self.add_one((xx,yy),ww)
+
+    def rem_data(
+        self,
+        data: Tuple[NDArray[np.float64],NDArray[np.float64]],
+        weight: NDArray[np.float64] = None) -> None:
+        """Remove a number of data into the BLR
+        
+        We need to provide a class specific method because this is a regression
+        mixture, i.e. the data are a tuple (X,y)
+
+        """
+
+        if weight is None:
+            weight = np.ones_like(data[1])
+
+        if data[0].shape[0] == 1 or len(data[0].shape)==1:
+            self.rem_one(data, weight)
+        else:
+            for xx, yy, ww in zip(data[0],data[1],weight):
+                self.rem_one((xx,yy),ww)
 
 
 
