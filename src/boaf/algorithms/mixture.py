@@ -52,7 +52,7 @@ class MixtureModel(Cluster):
                 init: (Optional) Initialisation method 'kpp' or 'rand';
                 niters: Number of training iterations;
                 nclusters: Number of clusters;
-                prior: dictionary of options for prior specification, see distribution docs;
+                prior: dictionary of options for prior specification (:mod:`boaf.base_distributions`);
             base_distribution: Base distribution class, see :mod:`boaf.base_distributions`
         """
         super().__init__(opts)
@@ -167,7 +167,7 @@ class MixtureModel(Cluster):
         N = data.shape[0]
         not_used = np.ones((N,),bool)
         not_used[k] = False
-        #Random initialise
+        
         for i, x in enumerate(data[not_used,:]):
             x = x[None,:]
             ll = self.likelihood(x)
@@ -193,8 +193,6 @@ class MixtureModel(Cluster):
                 D dimensions.
 
         """
-
-        N, D = data.shape
 
         self._init_clusters(data)
         ll = self.likelihood(data)
@@ -256,3 +254,92 @@ class GMM(MixtureModel):
         base_distribution = NIW
         super().__init__(opts, base_distribution=base_distribution)
 
+
+
+class RegressorMixture(MixtureModel):
+    """Base Class for Clustering Regression Data
+
+    With relative ease we can extend the paradigm of the mixture model to include
+    clustering over regression data, i.e. data with inputs and outputs. This can
+    be useful if we expect to see multiple behaviours in a dataset, e.g. in the 
+    case where we have data produced by two processes which are switched between.
+
+    It is not too difficult to imagine the extension to the mathematical model which
+    generates these types of dataset. Where now our data :math:`\mathcal{D}` are a
+    set of pairs of inputs :math:`X_i` and and observed target :math:`y_i` for 
+    :math:`i=1,\ldots,N` with :math:`N` data pairs observed.
+
+    .. math:: 
+        k \\sim Mult(\pi)\\\\
+        y_i \\vert X_i, k, \\theta_k \\sim p_k(y \\vert X, \\theta_k)\\\\
+        p(y \\vert X, \\theta) = \\prod_{k=1}^K \\pi_k p_k(y \\vert X, \\theta_k)
+
+    The model follows exactly as before, expect for the fact that an additional 
+    dependence of :math:`y` on :math:`X` is introduced. In certain cases this will
+    be possible to deal with analytically, e.g. in a mixture of linear regressors.
+    As before it will be possible to place priors on :math:`\\theta` and :math:`\\pi`
+    as desired.    
+    """
+
+    def __init__(self, opts: dict, *, base_distribution: Type[BaseDistribution]) -> None:
+        """Initialise
+        
+        As for regular mixture model
+
+        """
+
+        super().__init__(opts, base_distribution=base_distribution)        
+        # If not initialisation specified use random as K++ doesn't make sense
+        if 'init' not in opts:
+            self.opts['init'] = 'rand' 
+
+    
+    def likelihood(self, data: NDArray[np.float64]) -> NDArray[np.float64]:
+        """Log Predictive Likelihood
+
+        Compute the log predictive likelihood of a set of data pairs with respect
+        to each of the clusters of the model. This is given by the following 
+        equation for the k-th cluster:
+
+        .. math::
+            \\log p_k(y_i \\vert X_i, \\theta_k) = \\log(\\pi_k) +
+            \\log(p_k(y_i \\vert X_i, \\theta_k))
+
+        This is the sum of the log mixing proportion and the log predictive
+        likelihood for the k-th cluster.
+
+        Args:
+            data: A tuple (X,y), X has size (N,D) and y (N,) where the likelihood
+            is assessed for each of the N data
+
+        Returns:
+            An (N,) array of log predictive likelihoods for each of the N datapoints
+
+        """
+        N, D = data[0].shape
+        likelihood = np.empty((N,self.opts['nclusters']))
+        for k, cluster in enumerate(self.clusters):
+            likelihood[:,k] = (cluster.logpredpdf(data) + 
+                np.log(self.mixing_proportions[k]))
+        return likelihood
+
+    def _init_clusters(self, data:NDArray[np.float64]):
+        """Initalise Mixture Model Clusters
+
+        Initialise the clusters by assigning some initial data to the clusters.
+        For RegressorMixture only random initialisation is supported
+        
+        Args:
+            data: A tuple (X,y), X has size (N,D) and y (N,) where the likelihood
+            is assessed for each of the N data
+
+        """
+        
+        N = data[0].shape[0]
+        k = np.random.randint(0,self.opts['nclusters'],(N,))
+        
+        # TODO: Replace with calls of add_data for each cluster
+        for x in zip(k,*data):
+            self.clusters[x[0]].add_one(x[1:])
+
+    
