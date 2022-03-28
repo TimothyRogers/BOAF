@@ -1,11 +1,12 @@
+from typing import Type
+
 import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.distance import cdist
-from typing import Type
 
-from .base import Cluster
 from ..base_distributions.base import BaseDistribution
 from ..base_distributions.multivariate import NIW
+from .base import Cluster
 
 
 class MixtureModel(Cluster):
@@ -41,12 +42,11 @@ class MixtureModel(Cluster):
 
     """
 
-    def __init__(self,
-             opts: dict,
-             *,
-             base_distribution: Type[BaseDistribution]) -> None:
+    def __init__(
+        self, opts: dict, *, base_distribution: Type[BaseDistribution]
+    ) -> None:
         """Initialise Mixture Model Clustering
-        
+
         Args:
             opts: Dictionary of options with args:
                 init: (Optional) Initialisation method 'kpp' or 'rand';
@@ -57,12 +57,14 @@ class MixtureModel(Cluster):
         """
         super().__init__(opts)
         # If not initialisation specified use K++
-        if 'init' not in self.opts:
-            self.opts['init'] = 'kpp' 
+        if "init" not in self.opts:
+            self.opts["init"] = "kpp"
         self.base_distribution = base_distribution
-        self.mixing_proportions = opts['prior']['alpha']
-        self.clusters = [self.base_distribution(**self.opts['prior']['cluster']) \
-                 for _ in range(self.opts['nclusters'])]
+        self.mixing_proportions = opts["prior"]["alpha"]
+        self.clusters = [
+            self.base_distribution(**self.opts["prior"]["cluster"])
+            for _ in range(self.opts["nclusters"])
+        ]
 
     def learn(self, data: NDArray[np.float64]) -> None:
         """Learn the Mixture Model
@@ -71,7 +73,7 @@ class MixtureModel(Cluster):
         supported. This function is simply a thin wrapper on :meth:`_em()`
 
         Todo:
-            * Add Gibbs sampling 
+            * Add Gibbs sampling
 
         Args:
             data: An array of training data size (N,D) with N observations in
@@ -82,17 +84,17 @@ class MixtureModel(Cluster):
     def predict(self, data: NDArray[np.float64]) -> NDArray[np.int16]:
         """Predict most likelihood cluster indices
 
-        For the data being predicted, the predicted cluster indices are given 
+        For the data being predicted, the predicted cluster indices are given
         by taking the maximum likelihood for the predictive given the learnt
         clusters in the model, including the mixing proportions.
 
         Args:
             data: An array of data size (N,D) with N observations in D dimensions
                 for which to determine the clusters.
-        
+
         Returns:
             An array of indices, size (N,)
-        
+
         """
         ll = self.likelihood(data)
         return np.argmax(ll, axis=1)
@@ -101,7 +103,7 @@ class MixtureModel(Cluster):
         """Log Predictive Likelihood
 
         Compute the log predictive likelihood of a set of data points with respect
-        to each of the clusters of the model. This is given by the following 
+        to each of the clusters of the model. This is given by the following
         equation for the k-th cluster:
 
         .. math::
@@ -120,13 +122,14 @@ class MixtureModel(Cluster):
 
         """
         N, D = data.shape
-        likelihood = np.empty((N,self.opts['nclusters']))
+        likelihood = np.empty((N, self.opts["nclusters"]))
         for k, cluster in enumerate(self.clusters):
-            likelihood[:,k] = (cluster.logpredpdf(data) + 
-                np.log(self.mixing_proportions[k]))
+            likelihood[:, k] = cluster.logpredpdf(data) + np.log(
+                self.mixing_proportions[k]
+            )
         return likelihood
 
-    def _init_clusters(self, data:NDArray[np.float64]):
+    def _init_clusters(self, data: NDArray[np.float64]):
         """Initalise Mixture Model Clusters
 
         Initialise the clusters by assigning some initial data to the clusters.
@@ -137,7 +140,7 @@ class MixtureModel(Cluster):
 
         Todo:
             * Abstract this because it's the same as KMeans...
-        
+
         Args:
             data: An array of training data size (N,D) with N observations in
                 D dimensions.
@@ -145,31 +148,31 @@ class MixtureModel(Cluster):
         """
 
         N = data.shape[0]
-        if self.opts['init'] == 'kpp':
+        if self.opts["init"] == "kpp":
             # First mean is random
             k = [np.random.choice(N)]
-            self.means = data[k[0],:][None,:]
-            self.clusters[0].add_one(data[k[0],:][None,:])
+            self.means = data[k[0], :][None, :]
+            self.clusters[0].add_one(data[k[0], :][None, :])
             # Rest of clusters add furthest data
-            for i in range(self.opts['nclusters']-1):
+            for i in range(self.opts["nclusters"] - 1):
                 # Distances
-                dists = np.min(cdist(data, self.means),axis=1)
+                dists = np.min(cdist(data, self.means), axis=1)
                 # Convert to probabilities
-                pmean = dists/np.sum(dists,axis=0)
-                # Assign with p = pmean 
+                pmean = dists / np.sum(dists, axis=0)
+                # Assign with p = pmean
                 k.append(np.random.choice(N, p=pmean))
-                self.means = np.vstack((self.means,data[k[-1],:]))
-                self.clusters[i+1].add_one(data[k[-1],:][None,:])
-        elif self.opts['init'][:4] == 'rand':
-            k = np.random.choice(N,self.opts['nclusters'], replace=False)
-            self.means = data[k,:]
-        
+                self.means = np.vstack((self.means, data[k[-1], :]))
+                self.clusters[i + 1].add_one(data[k[-1], :][None, :])
+        elif self.opts["init"][:4] == "rand":
+            k = np.random.choice(N, self.opts["nclusters"], replace=False)
+            self.means = data[k, :]
+
         N = data.shape[0]
-        not_used = np.ones((N,),bool)
+        not_used = np.ones((N,), bool)
         not_used[k] = False
-        
-        for i, x in enumerate(data[not_used,:]):
-            x = x[None,:]
+
+        for i, x in enumerate(data[not_used, :]):
+            x = x[None, :]
             ll = self.likelihood(x)
             ind = np.argmax(ll)
             self.clusters[ind].add_data(x)
@@ -181,13 +184,13 @@ class MixtureModel(Cluster):
         to be made. After initialisation, points are assigned to clusters weighted
         by their *responsibility* which is the normalised predictive log likelihood
         under the estimated parameters of the model in the previous step. Then
-        the mixing proportions can also be estimated by the normalised responsibility 
+        the mixing proportions can also be estimated by the normalised responsibility
         in each cluster.
-        
+
         Note:
             It is the responsibility (pun intended) of the base distibutions to
-            implement the weighted updates. 
-        
+            implement the weighted updates.
+
         Args:
             data: An array of training data size (N,D) with N observations in
                 D dimensions.
@@ -199,36 +202,41 @@ class MixtureModel(Cluster):
         responsibility = np.exp(self.normalise_log_likelihood(ll.T).T)
         Q_old = -np.inf
 
-        for it in range(self.opts['niters']):
+        for it in range(self.opts["niters"]):
             ll = self.likelihood(data)
-            Q = np.sum(responsibility*ll)
+            Q = np.sum(responsibility * ll)
             # Stopping condition on the total log likelihood, may need refining
             if Q <= Q_old and it > 3:
                 return
             Q_old = Q
             responsibility = np.exp(self.normalise_log_likelihood(ll.T).T)
-            self.mixing_proportions = np.sum(responsibility, axis=0)/np.sum(responsibility)
-            self.clusters = [self.base_distribution(
-                **self.opts['prior']['cluster'],
-                 data=data,
-                  weight=responsibility[:,k]) for k in range(self.opts['nclusters'])]
+            self.mixing_proportions = np.sum(responsibility, axis=0) / np.sum(
+                responsibility
+            )
+            self.clusters = [
+                self.base_distribution(
+                    **self.opts["prior"]["cluster"],
+                    data=data,
+                    weight=responsibility[:, k]
+                )
+                for k in range(self.opts["nclusters"])
+            ]
 
-        print('Done')
+        print("Done")
 
     @staticmethod
     def normalise_log_likelihood(ll: NDArray[np.float64]):
         """Numerically stable log likelihood normalisation
 
-        Use LogSumExp trick to normalise log likelihoods. Maybe this should move 
+        Use LogSumExp trick to normalise log likelihoods. Maybe this should move
         out of the class and into a utility module.
 
         Args:
             ll: An array of log likelihoods to be noramlised along axis 0
         """
-        ml = np.max(ll,axis=0)[None,:]
-        ll = ll-ml
-        return ll - np.log(np.sum(np.exp(ll),axis=0))[None,:]
-
+        ml = np.max(ll, axis=0)[None, :]
+        ll = ll - ml
+        return ll - np.log(np.sum(np.exp(ll), axis=0))[None, :]
 
 
 class GMM(MixtureModel):
@@ -236,24 +244,23 @@ class GMM(MixtureModel):
 
     Provide a simple interface for learning GMMs, this is simply fixing the
     base distribution of the mixture model to be Gaussian
-    
+
     """
 
     def __init__(self, opts: dict) -> None:
         """Initialise Mixture Model Clustering
-        
+
         Args:
             opts: Dictionary of options with args:
                 init: (Optional) Initialisation method 'kpp' or 'rand';
                 niters: Number of training iterations;
                 nclusters: Number of clusters;
-                prior: dictionary of options for prior specification, see 
+                prior: dictionary of options for prior specification, see
                 :class:`NIW <boaf.base_distributions.multivariate.NIW>`
         """
-        
+
         base_distribution = NIW
         super().__init__(opts, base_distribution=base_distribution)
-
 
 
 class RegressorMixture(MixtureModel):
@@ -281,24 +288,25 @@ class RegressorMixture(MixtureModel):
     as desired.    
     """
 
-    def __init__(self, opts: dict, *, base_distribution: Type[BaseDistribution]) -> None:
+    def __init__(
+        self, opts: dict, *, base_distribution: Type[BaseDistribution]
+    ) -> None:
         """Initialise
-        
+
         As for regular mixture model
 
         """
 
-        super().__init__(opts, base_distribution=base_distribution)        
+        super().__init__(opts, base_distribution=base_distribution)
         # If not initialisation specified use random as K++ doesn't make sense
-        if 'init' not in opts:
-            self.opts['init'] = 'rand' 
+        if "init" not in opts:
+            self.opts["init"] = "rand"
 
-    
     def likelihood(self, data: NDArray[np.float64]) -> NDArray[np.float64]:
         """Log Predictive Likelihood
 
         Compute the log predictive likelihood of a set of data pairs with respect
-        to each of the clusters of the model. This is given by the following 
+        to each of the clusters of the model. This is given by the following
         equation for the k-th cluster:
 
         .. math::
@@ -317,29 +325,28 @@ class RegressorMixture(MixtureModel):
 
         """
         N, D = data[0].shape
-        likelihood = np.empty((N,self.opts['nclusters']))
+        likelihood = np.empty((N, self.opts["nclusters"]))
         for k, cluster in enumerate(self.clusters):
-            likelihood[:,k] = (cluster.logpredpdf(data) + 
-                np.log(self.mixing_proportions[k]))
+            likelihood[:, k] = cluster.logpredpdf(data) + np.log(
+                self.mixing_proportions[k]
+            )
         return likelihood
 
-    def _init_clusters(self, data:NDArray[np.float64]):
+    def _init_clusters(self, data: NDArray[np.float64]):
         """Initalise Mixture Model Clusters
 
         Initialise the clusters by assigning some initial data to the clusters.
         For RegressorMixture only random initialisation is supported
-        
+
         Args:
             data: A tuple (X,y), X has size (N,D) and y (N,) where the likelihood
             is assessed for each of the N data
 
         """
-        
-        N = data[0].shape[0]
-        k = np.random.randint(0,self.opts['nclusters'],(N,))
-        
-        # TODO: Replace with calls of add_data for each cluster
-        for x in zip(k,*data):
-            self.clusters[x[0]].add_one(x[1:])
 
-    
+        N = data[0].shape[0]
+        k = np.random.randint(0, self.opts["nclusters"], (N,))
+
+        # TODO: Replace with calls of add_data for each cluster
+        for x in zip(k, *data):
+            self.clusters[x[0]].add_one(x[1:])
