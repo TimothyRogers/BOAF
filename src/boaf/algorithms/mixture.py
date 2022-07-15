@@ -80,6 +80,7 @@ class MixtureModel(Cluster):
                 D dimensions.
         """
         self._em(data)
+        return self.predict(data)
 
     def predict(self, data: NDArray[np.float64]) -> NDArray[np.int16]:
         """Predict most likelihood cluster indices

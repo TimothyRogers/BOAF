@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from ..utils import NoPredictException
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -70,4 +72,4 @@ class Cluster(ABC):
 
 
         """
-        raise NotImplementedError
+        raise NoPredictException
