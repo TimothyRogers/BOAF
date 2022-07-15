@@ -42,7 +42,7 @@ class KMeans(Cluster):
 
         self.initialise(data)
         self._fit(data)
-        self.predict(data)
+        return self.predict(data)
 
     def initialise(self, data: NDArray[np.float64]) -> None:
         """Initialise the KMeans centers
