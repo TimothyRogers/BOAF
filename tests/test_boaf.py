@@ -1,6 +1,7 @@
 import pytest
 
 from boaf.algorithms.base import Cluster
+from boaf.utils import NoPredictException
 
 def test_base_cluster():
 
@@ -10,6 +11,6 @@ def test_base_cluster():
     with pytest.raises(NotImplementedError): 
         model.learn(None)
 
-    with pytest.raises(NotImplementedError): 
+    with pytest.raises(NoPredictException): 
         model.predict(None)
         
